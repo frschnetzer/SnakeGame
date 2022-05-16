@@ -6,26 +6,25 @@ namespace SnakeGame
     {
         private List<Circle> Snake = new();
 
-        private Circle food = new();
-
-        private Input _input = new();
+        private Circle _food = new();
 
         public FormSnakeGame()
         {
             InitializeComponent();
+
             this.Hide();
-            RegistrationForm registrationForm = new RegistrationForm();
+            RegistrationForm registrationForm = new();
             registrationForm.ShowDialog();
         }
 
         private void FormSnakeGame_KeyDown(object sender, KeyEventArgs e)
         {
-            _input.ChangeState(e.KeyCode, true);
+            Input.ChangeState(e.KeyCode, true);
         }
 
         private void FormSnakeGame_KeyUp(object sender, KeyEventArgs e)
         {
-            _input.ChangeState(e.KeyCode, false);
+            Input.ChangeState(e.KeyCode, false);
         }
 
         private void UpdateGraphics(object sender, PaintEventArgs e)
@@ -56,8 +55,8 @@ namespace SnakeGame
 
                     canvas.FillEllipse(Brushes.Red,
                                         new Rectangle(
-                                            food.X * Settings.Width,
-                                            food.Y * Settings.Height,
+                                            _food.X * Settings.Width,
+                                            _food.Y * Settings.Height,
                                             Settings.Width, Settings.Height
                                             ));
                 }
@@ -127,7 +126,7 @@ namespace SnakeGame
                         }
                     }
 
-                    if (Snake[0].X == food.X && Snake[0].Y == food.Y)
+                    if (Snake[0].X == _food.X && Snake[0].Y == _food.Y)
                     {
                         Eat();
                     }
@@ -147,12 +146,12 @@ namespace SnakeGame
             int maxYpos = pictureBoxBoard.Size.Height / Settings.Height;
 
             Random rnd = new Random();
-            food = new Circle { X = rnd.Next(0, maxXpos), Y = rnd.Next(0, maxYpos) };
+            _food = new Circle { X = rnd.Next(0, maxXpos), Y = rnd.Next(0, maxYpos) };
         }
 
         private void Eat()
         {
-            Circle body = new Circle
+            Circle body = new()
             {
                 X = Snake[Snake.Count - 1].X,
                 Y = Snake[Snake.Count - 1].Y
@@ -176,26 +175,26 @@ namespace SnakeGame
         {
             if (Settings.GameOver == true)
             {
-                if (_input.KeyPress(Keys.Enter))
+                if (Input.KeyPress(Keys.Enter))
                 {
                     StartGame();
                 }
             }
             else
             {
-                if (_input.KeyPress(Keys.Right) && Settings.direction != Directions.Left)
+                if (Input.KeyPress(Keys.Right) && Settings.direction != Directions.Left)
                 {
                     Settings.direction = Directions.Right;
                 }
-                else if (_input.KeyPress(Keys.Left) && Settings.direction != Directions.Right)
+                else if (Input.KeyPress(Keys.Left) && Settings.direction != Directions.Right)
                 {
                     Settings.direction = Directions.Left;
                 }
-                else if (_input.KeyPress(Keys.Up) && Settings.direction != Directions.Down)
+                else if (Input.KeyPress(Keys.Up) && Settings.direction != Directions.Down)
                 {
                     Settings.direction = Directions.Up;
                 }
-                else if (_input.KeyPress(Keys.Down) && Settings.direction != Directions.Up)
+                else if (Input.KeyPress(Keys.Down) && Settings.direction != Directions.Up)
                 {
                     Settings.direction = Directions.Down;
                 }
@@ -208,6 +207,7 @@ namespace SnakeGame
 
         private void buttonStart_Click(object sender, EventArgs e)
         {
+            this.Focus();
             new Settings();
 
             timerSnakeGame.Interval = 1000 / Settings.Speed;

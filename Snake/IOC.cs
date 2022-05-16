@@ -32,10 +32,7 @@ internal static class IOC
 
     private static ContainerBuilder Setup(this ContainerBuilder builder)
     {
-        builder.RegisterType<Circle>().As<IInput>();
-        builder.RegisterType<Settings>().As<IInput>();
         builder.RegisterType<Input>().As<IInput>();
-
         return builder;
     }
 }

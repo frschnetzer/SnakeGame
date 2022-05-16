@@ -3,15 +3,15 @@ using System.Collections;
 
 namespace SnakeGame;
 
-internal class Input : IInput
+internal class Input
 {
-    private static Hashtable keyTable = new Hashtable();
+    private static Hashtable keyTable = new();
 
     public Input()
     {
     }
 
-    public bool KeyPress(Keys key)
+    public static bool KeyPress(Keys key)
     {
         if (keyTable[key] == null)
         {
@@ -21,7 +21,7 @@ internal class Input : IInput
         return (bool)keyTable[key];
     }
 
-    public void ChangeState(Keys key, bool state)
+    public static void ChangeState(Keys key, bool state)
     {
         keyTable[key] = state;
     }

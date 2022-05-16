@@ -12,110 +12,109 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace SnakeGame
+namespace SnakeGame;
+
+public partial class RegistrationForm : Form
 {
-    public partial class RegistrationForm : Form
+    public RegistrationForm()
     {
-        public RegistrationForm()
+        InitializeComponent();
+    }
+
+    private void buttonCancel_Click(object sender, EventArgs e)
+    {
+        Environment.Exit(0);
+    }
+
+    private void buttonLogin_Click(object sender, EventArgs e)
+    {
+        var loginName = textBoxUserName.Text;
+        var loginPassword = textBoxPassword.Text;
+
+        var connection = new SqlConnection();
+        connection.ConnectionString = "Data Source = (localdb)\\MSSQLLocalDB; Initial Catalog = SnakeGameDb; Integrated Security = True";
+
+        if (!ValidateEntry(loginName, loginPassword))
         {
-            InitializeComponent();
+            MessageBox.Show("Loginname or Password are too long");
         }
-
-        private void buttonCancel_Click(object sender, EventArgs e)
+        else
         {
-            Environment.Exit(0);
-        }
+            var validatePw = EncryptPassword(loginPassword);
 
-        private void buttonLogin_Click(object sender, EventArgs e)
-        {
-            var loginName = textBoxUserName.Text;
-            var loginPassword = textBoxPassword.Text;
+            using var db = new SnakeGameContext();
+            var user = db.GameDb
+                .Where(x => x.LoginName == loginName && x.Password == validatePw)
+                .FirstOrDefault();
 
-            var connection = new SqlConnection();
-            connection.ConnectionString = "Data Source = (localdb)\\MSSQLLocalDB; Initial Catalog = SnakeGameDb; Integrated Security = True";
-
-            if (!ValidateEntry(loginName, loginPassword))
+            if (user is null)
             {
-                MessageBox.Show("Loginname or Password are too long");
+                MessageBox.Show("Loginname or Password is wrong.");
+                return;
             }
-            else
+
+            Close();
+        }
+    }
+
+    private bool ValidateEntry(string loginName, string loginPassword)
+    {
+        if (string.IsNullOrEmpty(loginName) || string.IsNullOrEmpty(loginPassword))
+        {
+            return false;
+        }
+
+        if (loginName.Length > 20 || loginPassword.Length > 10)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    private void buttonSignUp_Click(object sender, EventArgs e)
+    {
+        var loginName = textBoxUserName.Text;
+        var loginPassword = textBoxPassword.Text;
+
+        if (!ValidateEntry(loginName, loginPassword))
+        {
+            MessageBox.Show("Loginname or Password are too long");
+        }
+        else
+        {
+            using var db = new SnakeGameContext();
+            var user = db.GameDb
+                .Where(x => x.LoginName == loginName)
+                .FirstOrDefault();
+
+            if (user is null)
             {
-                var validatePw = EncryptPassword(loginPassword);
+                var encrypedPw = EncryptPassword(loginPassword);
 
-                using var db = new SnakeGameContext();
-                var user = db.GameDb
-                    .Where(x => x.LoginName == loginName && x.Password == validatePw)
-                    .FirstOrDefault();
-
-                if (user is null)
+                db.Add(new SnakeGameDb
                 {
-                    MessageBox.Show("Loginname or Password is wrong.");
-                    return;
-                }
+                    LoginName = loginName,
+                    Password = encrypedPw,
+                    RegisterDate = DateTime.Now
+                });
+                db.SaveChanges();
 
-                Close();
+                FormSnakeGame main = new();
+                main.ShowDialog();
             }
         }
+    }
 
-        private bool ValidateEntry(string loginName, string loginPassword)
-        {
-            if (string.IsNullOrEmpty(loginName) || string.IsNullOrEmpty(loginPassword))
-            {
-                return false;
-            }
+    private static string EncryptPassword(string loginPassword)
+    {
+        using var sha = SHA256.Create();
 
-            if (loginName.Length > 20 || loginPassword.Length > 10)
-            {
-                return false;
-            }
-            return true;
-        }
+        loginPassword = AddSalt(loginPassword);
+        return Encoding.UTF8.GetString(sha.ComputeHash(Encoding.UTF8.GetBytes(loginPassword)));
+    }
 
-        private void buttonSignUp_Click(object sender, EventArgs e)
-        {
-            var loginName = textBoxUserName.Text;
-            var loginPassword = textBoxPassword.Text;
-
-            if (!ValidateEntry(loginName, loginPassword))
-            {
-                MessageBox.Show("Loginname or Password are too long");
-            }
-            else
-            {
-                using var db = new SnakeGameContext();
-                var user = db.GameDb
-                    .Where(x => x.LoginName == loginName)
-                    .FirstOrDefault();
-
-                if (user is null)
-                {
-                    var encrypedPw = EncryptPassword(loginPassword);
-
-                    db.Add(new SnakeGameDb
-                    {
-                        LoginName = loginName,
-                        Password = encrypedPw,
-                        RegisterDate = DateTime.Now
-                    });
-                    db.SaveChanges();
-
-                    FormSnakeGame main = new();
-                    main.ShowDialog();
-                }
-            }
-        }
-
-        private static string EncryptPassword(string loginPassword)
-        {
-            using var sha = SHA256.Create();
-
-            loginPassword = AddSalt(loginPassword);
-            return Encoding.UTF8.GetString(sha.ComputeHash(Encoding.UTF8.GetBytes(loginPassword)));
-        }
-
-        private static string AddSalt(string text)
-        {
-            return $"{text}supersalty";
-        }
+    private static string AddSalt(string text)
+    {
+        return $"{text}supersalty";
     }
 }
