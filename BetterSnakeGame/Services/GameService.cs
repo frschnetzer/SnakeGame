@@ -2,8 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace BetterSnakeGame.Services;
 
@@ -17,25 +16,37 @@ public class GameService
 
     private readonly int _width = 0;
 
+    private readonly int _size = 0;
+
+    private readonly TickService _tickService;
+
+    private CancellationToken _tickServiceCancelationToken;
+
     private Directions _currentDirection;
 
     private readonly List<Point> _snakePositions = new();
 
     private Point _foodPos = new Point();
 
-    public GameService(int height, int width, GameDelegate gameDelegate)
+    public GameService(int height, int width, int size, GameDelegate gameDelegate, TickService tickService)
     {
         _height = height;
         _width = width;
+        _size = size;
 
         _gameEvent = gameDelegate;
+
+        _tickService = tickService;
+        _tickService.AddDelegate(Move);
     }
 
     public void StartGame()
     {
         _snakePositions.Clear();
-
         _snakePositions.Add(new Point { X = (_width / 2), Y = (_height / 2) });
+        AddFood();
+
+        _tickService.StartTickTask(_tickServiceCancelationToken);
     }
 
     public List<Point> GetSnakePositions()
@@ -55,8 +66,8 @@ public class GameService
         int randY = 0;
         do
         {
-            randX = rand.Next(1, _width - 1);
-            randY = rand.Next(1, _height - 1);
+            randX = rand.Next((_size / 2), (_width - (_size / 2)));
+            randY = rand.Next((_size / 2), (_height - (_size / 2)));
         } while (_snakePositions.Any(x => x.X == randX && x.Y == randY));
 
         _foodPos = new Point { X = randX, Y = randY };
@@ -77,19 +88,19 @@ public class GameService
         switch (_currentDirection)
         {
             case Directions.Up:
-                head.Y++;
+                head.Y += (_size / 2);
                 break;
 
             case Directions.Down:
-                head.Y--;
+                head.Y -= (_size / 2);
                 break;
 
             case Directions.Right:
-                head.X++;
+                head.X += (_size / 2);
                 break;
 
             case Directions.Left:
-                head.X--;
+                head.X -= (_size / 2);
                 break;
 
             default:
@@ -124,12 +135,12 @@ public class GameService
 
         if (groups.Any(x => x.Count() > 1))
         {
-            _gameEvent.Invoke("Game over!");
+            _gameEvent("Game over!");
             return true;
         }
-        else if (head.X < 0 || head.X > _width || head.Y < 0 || head.Y > _height)
+        else if (head.X - (_size / 2) < 0 || head.X + (_size / 2) > _width || head.Y - (_size / 2) < 0 || head.Y + (_size / 2) > _height)
         {
-            _gameEvent.Invoke("Game over!");
+            _gameEvent("Game over!");
             return true;
         }
         return false;
@@ -139,10 +150,13 @@ public class GameService
     {
         var head = _snakePositions.First();
 
-        if (head.X == _foodPos.X && head.Y == _foodPos.Y)
+        if ((head.X + (_size / 2)) >= _foodPos.X && (head.X - (_size / 2)) <= _foodPos.X
+            && (head.Y + (_size / 2)) >= _foodPos.Y && (head.Y - (_size / 2)) <= _foodPos.Y)
         {
             AddTail();
             AddFood();
+
+            _tickService.ReduceTickTime();
         }
     }
 
@@ -153,19 +167,19 @@ public class GameService
         switch (_currentDirection)
         {
             case Directions.Up:
-                _snakePositions.Add(new Point { X = end.X, Y = end.Y + 1 });
+                _snakePositions.Add(new Point { X = end.X, Y = end.Y + (_size / 2) });
                 break;
 
             case Directions.Down:
-                _snakePositions.Add(new Point { X = end.X, Y = end.Y - 1 });
+                _snakePositions.Add(new Point { X = end.X, Y = end.Y - (_size / 2) });
                 break;
 
             case Directions.Right:
-                _snakePositions.Add(new Point { X = end.X + 1, Y = end.Y });
+                _snakePositions.Add(new Point { X = end.X + (_size / 2), Y = end.Y });
                 break;
 
             case Directions.Left:
-                _snakePositions.Add(new Point { X = end.X - 1, Y = end.Y });
+                _snakePositions.Add(new Point { X = end.X - (_size / 2), Y = end.Y });
                 break;
 
             default:

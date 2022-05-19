@@ -1,18 +1,10 @@
 ﻿using BetterSnakeGame.Services;
 using SimpleInjector;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace BetterSnakeGame;
@@ -22,6 +14,8 @@ namespace BetterSnakeGame;
 /// </summary>
 public partial class MainWindow : Window
 {
+    private readonly int _size;
+
     private readonly Container _container;
 
     private readonly GameService _gameService;
@@ -30,11 +24,15 @@ public partial class MainWindow : Window
     {
         _container = Bootstrapper.Bootstrap();
 
+        _size = 25;
+
         InitializeComponent();
-        _gameService = new GameService((int)snakeCanvas.Height, (int)snakeCanvas.Width, EndGame);
 
+        var tickServie = new TickService();
+
+        _gameService = new GameService((int)snakeCanvas.Height, (int)snakeCanvas.Width, _size, EndGame, tickServie);
+        tickServie.AddDelegate(DrawField);
         _gameService.StartGame();
-
         DrawField();
     }
 
@@ -56,40 +54,40 @@ public partial class MainWindow : Window
         {
             _gameService.ChangeDiretion(Models.Directions.Left);
         }
-
-        _gameService.Move();
-        DrawField();
     }
 
     // TODO: Draw snake
 
     private void DrawField()
     {
-        snakeCanvas.Children.Clear();
-        foreach (var item in _gameService.GetSnakePositions())
+        Dispatcher.Invoke(() =>
         {
-            var temp = new Ellipse
+            snakeCanvas.Children.Clear();
+            foreach (var item in _gameService.GetSnakePositions().ToList())
             {
-                Width = 5,
-                Height = 5,
-                Stroke = Brushes.Red,
-                StrokeThickness = 2
-            };
+                var temp = new Ellipse
+                {
+                    Width = _size,
+                    Height = _size,
+                    Stroke = Brushes.Red,
+                    StrokeThickness = 2
+                };
 
-            snakeCanvas.Children.Add(temp);
+                snakeCanvas.Children.Add(temp);
 
-            temp.SetValue(Canvas.LeftProperty, (double)item.X);
-            temp.SetValue(Canvas.BottomProperty, (double)item.Y);
-        }
+                temp.SetValue(Canvas.LeftProperty, (double)item.X - (_size / 2));
+                temp.SetValue(Canvas.BottomProperty, (double)item.Y - (_size / 2));
+            }
 
-        var foodPoint = new Ellipse { Width = 5, Height = 5, Stroke = Brushes.Black, StrokeThickness = 2 };
+            var foodPoint = new Ellipse { Width = _size, Height = _size, Stroke = Brushes.Black, StrokeThickness = 2 };
 
-        snakeCanvas.Children.Add(foodPoint);
+            snakeCanvas.Children.Add(foodPoint);
 
-        var tempFood = _gameService.GetFoodPosition();
+            var tempFood = _gameService.GetFoodPosition();
 
-        foodPoint.SetValue(Canvas.LeftProperty, (double)tempFood.X);
-        foodPoint.SetValue(Canvas.BottomProperty, (double)tempFood.Y);
+            foodPoint.SetValue(Canvas.LeftProperty, (double)tempFood.X - (_size / 2));
+            foodPoint.SetValue(Canvas.BottomProperty, (double)tempFood.Y - (_size / 2));
+        });
     }
 
     private void EndGame(string text)
